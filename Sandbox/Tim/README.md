@@ -17,9 +17,9 @@ Un natel filme le Thymio d'en haut. Le filtre de Kalman fusionne l'odométrie (v
    ```
    pip install tdmclient opencv-python numpy matplotlib notebook
    ```
-2. **Thymio Device Manager (TDM)**, le petit programme qui relaie le robot vers Python. Pour Windows, il est fourni par le cours :
-   `Exercises/Control your Thymio in Python/TDMs/TDMLauncher.exe` (depuis la racine du repo). Double-clique dessus : une icône Thymio apparaît en bas à droite de la barre des tâches. Clic droit sur l'icône pour le démarrer ou le quitter.
-   Si ça ne marche pas : installe **Thymio Suite**, ouvre Aseba Studio, choisis le robot puis **déverrouille-le** (petit cadenas dans l'onglet).
+2. **Thymio Device Manager (TDM)**, le petit programme qui relaie le robot vers Python. Sous Windows, installe **Thymio Suite** ([thymio.org](https://www.thymio.org/download-thymio-suite-redirect/)), qui contient le TDM, et **laisse sa fenêtre ouverte** pendant que tu travailles.
+   Le `TDMLauncher.exe` du cours ne suffit pas sous Windows : ce n'est qu'un lanceur, et il affiche une icône barrée s'il ne trouve pas le TDM à côté de lui.
+   Si tu ouvres Aseba Studio, **déverrouille le robot** (petit cadenas dans l'onglet), sinon Python ne peut pas le piloter.
 
 ## 2. Le natel comme caméra
 
@@ -35,8 +35,7 @@ Si le PC ne voit pas le flux :
 ## 3. Installer la scène
 
 - **Natel fixe au-dessus du robot** : trépied, étagère, ou règle posée entre deux chaises. Caméra arrière, écran **parallèle au sol**, format paysage, **au moins 1 m de haut**. La zone de test doit être au centre de l'image.
-- **Sol coloré et mat**, comme ton bois beige. La détection cherche ce qui est **blanc**, c'est-à-dire clair **et sans couleur**, par rapport à la couleur du sol. Un sol sans couleur (blanc, gris ou noir) ne convient pas. Le sol doit occuper la majeure partie de l'image.
-- **Aucun autre objet blanc ou gris clair** dans le champ. Éclairage uniforme et **sans reflet** : le vernis qui brille fait des taches blanches.
+- **Sol sombre et mat** (tissu ou carton noir, table foncée) et **aucun autre objet blanc ou clair** dans le champ. Éclairage uniforme, sans reflet.
 - Natel **branché au chargeur** et app DroidCam ouverte au premier plan.
 - Le dessus blanc du robot doit être entièrement visible. Un robot qui touche le bord de l'image est ignoré volontairement, pour éviter une mesure fausse.
 
@@ -48,14 +47,14 @@ Si le PC ne voit pas le flux :
 
 ## 5. Lancer le notebook
 
-Ouvre un terminal **dans le dossier `Project`** puis tape `jupyter notebook kalman_test.ipynb`. Tu peux aussi l'ouvrir dans VS Code.
+Ouvre un terminal **dans le dossier de ce README** (`Sandbox/Tim`) puis tape `jupyter notebook kalman_test.ipynb`. Tu peux aussi l'ouvrir dans VS Code.
 Exécute les cellules **dans l'ordre**. Les fenêtres d'images s'ouvrent à part, pas dans le notebook : **clique sur la fenêtre avant d'appuyer sur une touche**.
 
 | Section | Ce qu'il faut faire / voir |
 |---|---|
 | 1. Settings | Mettre ton `CAMERA_SOURCE`. |
 | 2. Connect | Le message « Connected to … » doit s'afficher. |
-| 3. Camera check | Dans la fenêtre *mask*, **seul le robot doit être blanc**. Le **curseur `saturation ratio %`** (60 % par défaut) règle la limite de couleur : trop haut, des veines du bois apparaissent ; trop bas, le robot se troue puis disparaît. Prends le milieu de la plage qui marche. La flèche verte part de l'axe des roues et pointe vers l'**avant arrondi**. **Contrôle du miroir** : tourne le robot à la main vers sa gauche (sens anti-horaire vu d'en haut), l'angle affiché doit **augmenter**. Sinon l'image est en miroir : désactive le miroir dans l'app. Laisse ensuite le robot immobile et appuie sur `q` : l'échelle `MM_PER_PIXEL` est mesurée sur 30 images. **Copie la valeur `SATURATION_RATIO` affichée dans la section 1** pour la garder. |
+| 3. Camera check | Règle le **curseur `white threshold`** de la fenêtre *mask* jusqu'à ce que **seul le robot soit blanc**. Trop bas, le fond devient blanc ; trop haut, le robot se troue puis disparaît. Prends le milieu de la plage qui marche (souvent entre 50 et 150 sur fond noir ; 90 par défaut). La flèche verte part de l'axe des roues et pointe vers l'**avant arrondi**. **Contrôle du miroir** : tourne le robot à la main vers sa gauche (sens anti-horaire vu d'en haut), l'angle affiché doit **augmenter**. Sinon l'image est en miroir : désactive le miroir dans l'app. Laisse ensuite le robot immobile et appuie sur `q` : l'échelle `MM_PER_PIXEL` est mesurée sur 30 images. **Copie la valeur `WHITE_THRESHOLD` affichée dans la section 1** pour la garder. |
 | 4. Mesures | Robot au centre de l'image, environ 25 cm libres devant lui. Il reste immobile 3 s puis roule tout droit 4 s. **Copie les constantes affichées dans la section 1** pour les garder. |
 | 5. Filtre | Le robot tourne en rond. Vert = caméra, rouge = odométrie seule, bleu = Kalman avec son ellipse à 95 %. Touche `c` : caméra on/off. Touche `q` : arrêt. |
 | 6. Résultats | Trajectoires, écarts-types et **validation de Q** (voir `THEORIE_KALMAN.md`, §7). La validation exige d'avoir coupé la caméra avec `c` : une main devant l'objectif cache aussi la vérité terrain. |
@@ -76,10 +75,10 @@ Repère utilisé : origine en **bas à gauche** de l'image, x vers la droite, y 
 |---|---|---|
 | `Cannot open the camera` | mauvaise IP, autre réseau, onglet du navigateur encore ouvert | revoir le §2, fermer le navigateur, rouvrir l'app |
 | L'image prend de plus en plus de retard | flux trop lourd | baisser la résolution ou les FPS dans l'app |
-| Des veines du bois ou des taches blanches dans *mask* | curseur trop haut, ou reflets sur le sol | baisser le curseur, supprimer les reflets (lumière indirecte). Un reste de taches est toléré tant qu'il ne touche pas le robot : seule une forme de robot (presque carrée, bien remplie) est retenue |
-| Le robot a des trous ou disparaît du *mask* | curseur trop bas | monter le curseur |
-| Aucun réglage ne sépare le robot du sol | sol presque sans couleur (blanc, gris), ou lumière très colorée | poser le robot sur un sol coloré (bois, carton brun), éclairage plus neutre |
-| Pas de flèche verte | robot pas seul en blanc, ou touchant le bord de l'image | régler le curseur (lignes ci-dessus), éloigner le robot du bord |
+| Des éléments du fond sont blancs dans *mask* | seuil trop bas | monter le curseur. Un reste de fond blanc est toléré tant qu'il ne touche pas le robot : seule une forme de robot (presque carrée, bien remplie) est retenue |
+| Le robot a des trous ou disparaît du *mask* | seuil trop haut | baisser le curseur |
+| Aucun seuil ne sépare le robot du fond | fond presque aussi clair que le robot | sol plus sombre et mat, enlever les objets clairs et les reflets, éviter le contre-jour |
+| Pas de flèche verte | robot pas seul en blanc, ou touchant le bord de l'image | régler le seuil (lignes ci-dessus), éloigner le robot du bord |
 | Flèche à l'envers ou de travers | dessus du robot partiellement caché, ou natel pas parallèle au sol | dégager le robot, redresser le natel, le monter plus haut |
 | Section 2 bloquée sur `wait_for_node` | TDM arrêté, robot éteint ou câble | démarrer le TDM, allumer le robot |
 | `Node lock error` | un autre programme garde le robot | fermer Aseba Studio et les autres notebooks, redémarrer le kernel, débrancher puis rebrancher |

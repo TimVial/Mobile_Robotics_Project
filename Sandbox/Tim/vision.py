@@ -1,4 +1,4 @@
-"""Pose of a white Thymio filmed from above on a coloured floor (e.g. by a phone), no calibration.
+"""Pose of a white Thymio filmed from above on a dark floor (e.g. by a phone), no calibration.
 
 Two pixel coordinate systems:
     image (u, v): OpenCV convention, origin top-left, v downwards
@@ -6,11 +6,8 @@ Two pixel coordinate systems:
 The pose is given at the centre of the wheel axle, the point whose motion odometry describes.
 
 Pipeline (course: Exercise 2 and OpenCV tutorial notebooks):
-    HSV -> bright and colourless pixels -> opening -> largest robot-like external contour
-Colour choice (course LDA criterion J, Perception slides 40-43, measured on Thymio_camera.png):
-the saturation S separates the white robot from the beige floor far better than the gray level
-(J = 17.5 against 7.5) and does not depend on the light intensity. The threshold is a fraction of
-the floor saturation (median of the image), so it also follows the colour of the light.
+    grayscale -> Gaussian blur -> threshold -> opening -> largest robot-like external contour
+The white threshold depends on the light: tune it live with the slider of the notebook (section 3).
 """
 
 from typing import NamedTuple
@@ -19,7 +16,6 @@ import cv2
 import numpy as np
 
 AXLE_BEHIND_CENTRE = 0.22   # wheel axle (pen hole) lies 22 % of the robot size behind its centre
-MIN_BRIGHTNESS = 60         # darker pixels have no reliable colour
 MIN_AREA_FRACTION = 0.001   # smaller blobs are noise
 MAX_ASPECT_RATIO = 1.3      # seen from above, the robot is almost square
 MIN_FILL_RATIO = 0.8        # contour area / bounding box area (Thymio: ~0.95)
@@ -47,15 +43,11 @@ def read_frame(camera):
     return frame
 
 
-def segment_white(frame, saturation_ratio):
-    """Mask (255) of the bright pixels whose saturation is below saturation_ratio x the floor saturation.
-
-    The floor fills most of the image, so the median saturation is the floor's one. With the measured
-    means (robot 29, floor 154), the course discriminator (29 + 154) / 2 = 91 is 0.6 x the floor.
-    """
-    hsv = cv2.cvtColor(cv2.GaussianBlur(frame, (5, 5), 0), cv2.COLOR_BGR2HSV)
-    max_saturation = saturation_ratio * np.median(hsv[:, :, 1])
-    mask = cv2.inRange(hsv, (0, 0, MIN_BRIGHTNESS), (179, max_saturation, 255))
+def segment_bright_regions(frame, white_threshold):
+    """Binary mask, 255 where the gray level (0-255) is above white_threshold (robot candidates)."""
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, mask = cv2.threshold(blurred, white_threshold, 255, cv2.THRESH_BINARY)
     return cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))  # removes small specks
 
 
@@ -72,9 +64,9 @@ def looks_like_robot(contour, image_shape):
             and area > MIN_FILL_RATIO * box_width * box_height)
 
 
-def detect_robot(frame, saturation_ratio):
+def detect_robot(frame, white_threshold):
     """RobotDetection of the robot, or None if no robot-like blob is visible."""
-    mask = segment_white(frame, saturation_ratio)
+    mask = segment_bright_regions(frame, white_threshold)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     robot_like_contours = [contour for contour in contours if looks_like_robot(contour, mask.shape)]
     if not robot_like_contours:
